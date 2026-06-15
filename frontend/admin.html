@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — UniVote</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/ethers.min.js"></script>
+    <style>
+        .admin-header {
+            background: var(--dark-2);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+        }
+
+        .admin-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .admin-header p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0;
+        }
+
+        .tab-btn {
+            padding: 0.6rem 1.2rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .election-item {
+            background: var(--dark-3);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .election-item:hover {
+            background: var(--border);
+        }
+
+        .election-item.selected {
+            border: 1px solid var(--primary);
+            background: rgba(99,102,241,0.1);
+        }
+
+        .election-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .election-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <a href="index.html" class="navbar-brand">🗳️ UniVote</a>
+        <ul class="navbar-links">
+            <li><a href="vote.html">Vote</a></li>
+            <li><a href="results.html">Results</a></li>
+            <li><a href="verify.html">Verify</a></li>
+            <li><a href="admin.html">Admin</a></li>
+        </ul>
+        <button class="wallet-btn" id="connectBtn" onclick="handleConnect()">
+            🔗 Connect Wallet
+        </button>
+    </nav>
+
+    <!-- ADMIN HEADER -->
+    <div class="admin-header">
+        <h1>⚙️ Admin Dashboard</h1>
+        <p>Manage elections, candidates, and voter registration</p>
+    </div>
+
+    <div class="container">
+
+        <!-- NOT CONNECTED -->
+        <div id="notConnected" class="card" style="text-align:center; padding: 3rem; margin-top: 2rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🔒</div>
+            <h2 style="margin-bottom: 0.5rem;">Admin Access Required</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Connect your admin wallet to access the dashboard</p>
+            <button class="btn btn-primary" onclick="handleConnect()">🔗 Connect Wallet</button>
+        </div>
+
+        <!-- NOT ADMIN -->
+        <div id="notAdmin" class="alert alert-error" style="display:none; margin-top: 2rem;">
+            ⛔ Your connected wallet is not the admin wallet. Please connect the wallet that deployed the contract.
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="dashboard" style="display:none;">
+
+            <!-- TABS -->
+            <div class="tab-buttons" style="margin-top: 1.5rem;">
+                <button class="tab-btn active" onclick="switchTab('elections')">📋 Elections</button>
+                <button class="tab-btn" onclick="switchTab('candidates')">👤 Candidates</button>
+                <button class="tab-btn" onclick="switchTab('voters')">🎓 Voters</button>
+            </div>
+
+            <!-- TAB: ELECTIONS -->
+            <div id="tab-elections" class="tab-content active">
+                <div class="admin-grid">
+                    <div class="card">
+                        <div class="section-title">Create New Election</div>
+                        <div id="electionAlert"></div>
+                        <div class="form-group">
+                            <label>Election Title</label>
+                            <input type="text" id="electionTitle" placeholder="e.g. SUG Election 2025">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="electionDesc" rows="3" placeholder="Brief description of the election"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Start Date & Time</label>
+                            <input type="datetime-local" id="electionStart">
+                        </div>
+                        <div class="form-group">
+                            <label>End Date & Time</label>
+                            <input type="datetime-local" id="electionEnd">
+                        </div>
+                        <button class="btn btn-primary" onclick="createElection()" id="createElectionBtn">
+                            ➕ Create Election
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="section-title">Existing Elections</div>
+                        <div id="electionsList">
+                            <p style="color: var(--text-muted); font-size: 0.875rem;">No elections created yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: CANDIDATES -->
+            <div id="tab-candidates" class="tab-content">
+                <div class="admin-grid">
+                    <div class="card">
+                        <div class="section-title">Add Candidate</div>
+                        <div id="candidateAlert"></div>
+                        <div class="form-group">
+                            <label>Select Election</label>
+                            <select id="candidateElectionId">
+                                <option value="">-- Select Election --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Candidate Full Name</label>
+                            <input type="text" id="candidateName" placeholder="e.g. John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label>Position Contesting</label>
+                            <input type="text" id="candidatePosition" placeholder="e.g. President">
+                        </div>
+                        <button class="btn btn-primary" onclick="addCandidate()" id="addCandidateBtn">
+                            ➕ Add Candidate
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="section-title">Candidates List</div>
+                        <div id="candidatesList">
+                            <p style="color: var(--text-muted); font-size: 0.875rem;">Select an election to view candidates.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: VOTERS -->
+            <div id="tab-voters" class="tab-content">
+                <div class="admin-grid">
+                    <div class="card">
+                        <div class="section-title">Register Voter</div>
+                        <div id="voterAlert"></div>
+                        <div class="form-group">
+                            <label>Select Election</label>
+                            <select id="voterElectionId">
+                                <option value="">-- Select Election --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Student Wallet Address</label>
+                            <input type="text" id="voterAddress" placeholder="0x...">
+                        </div>
+                        <div class="form-group">
+                            <label>Matric Number</label>
+                            <input type="text" id="voterMatric" placeholder="e.g. BU22CSC1126">
+                        </div>
+                        <button class="btn btn-primary" onclick="registerVoter()" id="registerVoterBtn">
+                            ➕ Register Voter
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="section-title">Check Voter Status</div>
+                        <div class="form-group">
+                            <label>Select Election</label>
+                            <select id="checkElectionId">
+                                <option value="">-- Select Election --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Wallet Address or Matric Number</label>
+                            <input type="text" id="checkVoter" placeholder="0x... or BU22CSC1126">
+                        </div>
+                        <button class="btn btn-outline" onclick="checkVoterStatus()">🔍 Check Status</button>
+                        <div id="voterStatusResult" style="margin-top: 1rem;"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="js/contract.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

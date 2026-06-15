@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify — UniVote</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/ethers.min.js"></script>
+    <style>
+        .verify-header {
+            background: var(--dark-2);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+        }
+
+        .verify-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .verify-header p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .verify-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .result-card {
+            background: var(--dark-3);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            color: var(--text-muted);
+        }
+
+        .result-value {
+            font-weight: 600;
+            text-align: right;
+            max-width: 60%;
+            word-break: break-all;
+        }
+
+        .nft-card {
+            background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(16,185,129,0.15));
+            border: 1px solid rgba(99,102,241,0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .nft-icon {
+            font-size: 3rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .verify-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .verify-tab {
+            padding: 0.6rem 1.2rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: all 0.2s;
+        }
+
+        .verify-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .verify-tab-content {
+            display: none;
+        }
+
+        .verify-tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .verify-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <a href="index.html" class="navbar-brand">🗳️ UniVote</a>
+        <ul class="navbar-links">
+            <li><a href="vote.html">Vote</a></li>
+            <li><a href="results.html">Results</a></li>
+            <li><a href="verify.html">Verify</a></li>
+            <li><a href="admin.html">Admin</a></li>
+        </ul>
+        <button class="wallet-btn" id="connectBtn" onclick="handleConnect()">
+            🔗 Connect Wallet
+        </button>
+    </nav>
+
+    <!-- VERIFY HEADER -->
+    <div class="verify-header">
+        <h1>✅ Verify</h1>
+        <p>Verify voter registration, matric numbers, and NFT certificates</p>
+    </div>
+
+    <div class="container">
+
+        <!-- TABS -->
+        <div class="verify-tabs" style="margin-top: 1.5rem;">
+            <button class="verify-tab active" onclick="switchVerifyTab('matric', event)">🎓 Matric Number</button>
+            <button class="verify-tab" onclick="switchVerifyTab('wallet', event)">👛 Wallet Status</button>
+            <button class="verify-tab" onclick="switchVerifyTab('nft', event)">🏅 NFT Certificate</button>
+        </div>
+
+        <!-- TAB: MATRIC NUMBER -->
+        <div id="tab-matric" class="verify-tab-content active">
+            <div class="verify-grid">
+                <div class="card">
+                    <div class="section-title">Verify Matric Number</div>
+                    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.2rem;">
+                        Check if a student matric number has been registered for an election.
+                    </p>
+                    <div class="form-group">
+                        <label>Select Election</label>
+                        <select id="matricElectionId">
+                            <option value="">-- Select Election --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Matric Number</label>
+                        <input type="text" id="matricInput" placeholder="e.g. BU22CSC1126">
+                    </div>
+                    <button class="btn btn-primary" onclick="verifyMatric()">🔍 Verify</button>
+                    <div id="matricResult" style="margin-top: 1rem;"></div>
+                </div>
+
+                <div class="card">
+                    <div class="section-title">About Matric Verification</div>
+                    <p style="color: var(--text-muted); font-size: 0.875rem; line-height: 1.7;">
+                        This system uses on-chain cryptographic identity binding. Each student's matric number is hashed using <strong>keccak256</strong> and permanently stored on the blockchain.
+                    </p>
+                    <br>
+                    <p style="color: var(--text-muted); font-size: 0.875rem; line-height: 1.7;">
+                        This ensures that:
+                    </p>
+                    <ul style="color: var(--text-muted); font-size: 0.875rem; line-height: 2; margin-left: 1.2rem; margin-top: 0.5rem;">
+                        <li>One matric number = one wallet = one vote</li>
+                        <li>The same matric number cannot register twice</li>
+                        <li>Raw matric numbers are never stored publicly</li>
+                        <li>Verification is done purely on-chain</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: WALLET STATUS -->
+        <div id="tab-wallet" class="verify-tab-content">
+            <div class="verify-grid">
+                <div class="card">
+                    <div class="section-title">Check Wallet Status</div>
+                    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.2rem;">
+                        Check the registration and voting status of any wallet address.
+                    </p>
+                    <div class="form-group">
+                        <label>Select Election</label>
+                        <select id="walletElectionId">
+                            <option value="">-- Select Election --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Wallet Address</label>
+                        <input type="text" id="walletInput" placeholder="0x...">
+                    </div>
+                    <button class="btn btn-primary" onclick="verifyWallet()">🔍 Check Status</button>
+                    <div id="walletResult" style="margin-top: 1rem;"></div>
+                </div>
+
+                <div class="card">
+                    <div class="section-title">My Wallet Status</div>
+                    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.2rem;">
+                        Connect your wallet to quickly check your own status.
+                    </p>
+                    <div id="myWalletNotConnected">
+                        <button class="btn btn-outline" onclick="handleConnect()">🔗 Connect Wallet</button>
+                    </div>
+                    <div id="myWalletConnected" style="display:none;">
+                        <div class="form-group">
+                            <label>Select Election</label>
+                            <select id="myWalletElectionId" onchange="checkMyStatus()">
+                                <option value="">-- Select Election --</option>
+                            </select>
+                        </div>
+                        <div id="myStatusResult"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: NFT CERTIFICATE -->
+        <div id="tab-nft" class="verify-tab-content">
+            <div class="verify-grid">
+                <div class="card">
+                    <div class="section-title">Verify NFT Certificate</div>
+                    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.2rem;">
+                        Check if a wallet holds a voter certificate NFT for a specific election.
+                    </p>
+                    <div class="form-group">
+                        <label>Select Election</label>
+                        <select id="nftElectionId">
+                            <option value="">-- Select Election --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Wallet Address</label>
+                        <input type="text" id="nftWalletInput" placeholder="0x...">
+                    </div>
+                    <button class="btn btn-primary" onclick="verifyNFT()">🔍 Verify Certificate</button>
+                    <div id="nftResult" style="margin-top: 1rem;"></div>
+                </div>
+
+                <div class="card">
+                    <div class="section-title">About Voter Certificates</div>
+                    <p style="color: var(--text-muted); font-size: 0.875rem; line-height: 1.7;">
+                        Every voter automatically receives a <strong>non-transferable NFT</strong> after casting their vote. This certificate:
+                    </p>
+                    <ul style="color: var(--text-muted); font-size: 0.875rem; line-height: 2; margin-left: 1.2rem; margin-top: 0.5rem;">
+                        <li>Cannot be transferred or sold</li>
+                        <li>Is permanently bound to the voter's wallet</li>
+                        <li>Contains the election title and timestamp</li>
+                        <li>Serves as verifiable proof of participation</li>
+                        <li>Can be viewed in MetaMask under NFTs</li>
+                    </ul>
+                    <br>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">
+                        NFT Contract: <span style="color: var(--primary); word-break: break-all;">${NFT_ADDRESS}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="js/contract.js"></script>
+    <script src="js/verify.js"></script>
+</body>
+</html>

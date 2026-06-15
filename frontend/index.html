@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniVote — Blockchain Voting System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/ethers.min.js"></script>
+    <style>
+        .hero {
+            min-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .hero-badge {
+            background: rgba(99,102,241,0.15);
+            border: 1px solid rgba(99,102,241,0.3);
+            color: var(--primary);
+            padding: 0.4rem 1rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            max-width: 700px;
+        }
+
+        .hero h1 span {
+            color: var(--primary);
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 550px;
+            line-height: 1.7;
+            margin-bottom: 2.5rem;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .hero-buttons .btn {
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+        }
+
+        .features {
+            padding: 5rem 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .features-title {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .features-subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 3rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.8rem;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+
+        .feature-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .stats {
+            background: var(--dark-2);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 3rem 2rem;
+        }
+
+        .stats-grid {
+            max-width: 900px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .how-it-works {
+            padding: 5rem 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .step {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(99,102,241,0.15);
+            border: 1px solid rgba(99,102,241,0.3);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-content h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+
+        .step-content p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        footer {
+            background: var(--dark-2);
+            border-top: 1px solid var(--border);
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.2rem; }
+            .features-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <a href="index.html" class="navbar-brand">
+            🗳️ UniVote
+        </a>
+        <ul class="navbar-links">
+            <li><a href="vote.html">Vote</a></li>
+            <li><a href="results.html">Results</a></li>
+            <li><a href="verify.html">Verify</a></li>
+            <li><a href="admin.html">Admin</a></li>
+        </ul>
+        <button class="wallet-btn" id="connectBtn" onclick="handleConnect()">
+            🔗 Connect Wallet
+        </button>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-badge">🔗 Powered by Ethereum Blockchain</div>
+        <h1>University Elections,<br><span>Reimagined</span> on the Blockchain</h1>
+        <p>A transparent, tamper-proof, and fully decentralized voting system for university elections. Every vote is permanently recorded on the blockchain — no central authority, no manipulation.</p>
+        <div class="hero-buttons">
+            <a href="vote.html" class="btn btn-primary">🗳️ Cast Your Vote</a>
+            <a href="results.html" class="btn btn-outline">📊 View Results</a>
+        </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats">
+        <div class="stats-grid">
+            <div>
+                <div class="stat-number" id="statElections">—</div>
+                <div class="stat-label">Elections Created</div>
+            </div>
+            <div>
+                <div class="stat-number" id="statNFTs">—</div>
+                <div class="stat-label">Voter Certificates Minted</div>
+            </div>
+            <div>
+                <div class="stat-number">100%</div>
+                <div class="stat-label">Tamper-Proof</div>
+            </div>
+            <div>
+                <div class="stat-number">0</div>
+                <div class="stat-label">Central Authorities</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features">
+        <h2 class="features-title">Why UniVote?</h2>
+        <p class="features-subtitle">Built to solve real problems in university elections</p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🎓</div>
+                <h3>Student Identity Verification</h3>
+                <p>Every voter's matric number is cryptographically hashed and bound to their wallet on-chain. One student, one wallet, one vote — enforced by the blockchain itself.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Tamper-Proof Voting</h3>
+                <p>Votes are recorded permanently on the Ethereum blockchain. No admin, no authority, and no hacker can alter or delete a vote once it is cast.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🏅</div>
+                <h3>NFT Voter Certificate</h3>
+                <p>Every voter automatically receives a non-transferable NFT certificate after voting — a permanent, verifiable proof of participation on the blockchain.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Real-Time Results</h3>
+                <p>Election results are publicly visible and update in real time as votes are cast. No waiting for manual counting — the smart contract tallies everything automatically.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌐</div>
+                <h3>Fully Decentralized</h3>
+                <p>No central server, no database, no single point of failure. The entire system runs on the Ethereum blockchain — available to anyone, anywhere, at any time.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">✅</div>
+                <h3>Independently Verifiable</h3>
+                <p>Any student can verify their vote was counted using their transaction hash. No need to trust the university — the blockchain is the proof.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="how-it-works">
+        <h2 class="features-title">How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Admin creates an election</h3>
+                    <p>The election officer creates an election with a title, description, start time and end time. Candidates are added before the election begins.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Students are registered with their matric number</h3>
+                    <p>Each eligible student's matric number is hashed and permanently bound to their wallet address on-chain. The same matric number cannot be used twice.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Students connect their wallet and vote</h3>
+                    <p>During the election period, registered students connect their MetaMask wallet and cast their vote. The smart contract verifies their eligibility instantly.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>NFT certificate is minted automatically</h3>
+                    <p>The moment a vote is cast, a non-transferable NFT voter certificate is minted directly to the student's wallet as permanent proof of participation.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <h3>Results are publicly verifiable</h3>
+                    <p>After the election ends, the winner is determined automatically by the smart contract. Anyone can verify the results independently on the blockchain.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>UniVote — A Web-Based Blockchain-Powered Electronic Voting System for University Elections</p>
+        <p style="margin-top: 0.5rem;">Built on Ethereum Sepolia Testnet | Smart contracts verified on Etherscan</p>
+    </footer>
+
+    <script src="js/contract.js"></script>
+    <script>
+        async function handleConnect() {
+            const connected = await connectWallet();
+            if (connected) {
+                const address = await signer.getAddress();
+                const btn = document.getElementById("connectBtn");
+                btn.textContent = "✅ " + shortenAddress(address);
+                btn.classList.add("wallet-connected");
+            }
+        }
+
+        async function loadStats() {
+            try {
+                if (typeof window.ethereum === "undefined") return;
+                await getReadOnlyContracts();
+                const electionCount = await votingContract.getElectionCount();
+                const nftSupply = await nftContract.totalSupply();
+                document.getElementById("statElections").textContent = electionCount.toString();
+                document.getElementById("statNFTs").textContent = nftSupply.toString();
+            } catch (e) {
+                console.log("Stats not available:", e);
+            }
+        }
+
+        loadStats();
+    </script>
+</body>
+</html>

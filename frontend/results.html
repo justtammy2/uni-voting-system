@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Election Results — UniVote</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/ethers.min.js"></script>
+    <style>
+        .results-header {
+            background: var(--dark-2);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+        }
+
+        .results-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .results-header p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .candidate-result {
+            background: var(--dark-3);
+            border-radius: 10px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .candidate-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.6rem;
+        }
+
+        .candidate-result-name {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .candidate-result-votes {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .winner-card {
+            background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(16,185,129,0.15));
+            border: 1px solid rgba(99,102,241,0.4);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .winner-trophy {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .winner-name {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 0.3rem;
+        }
+
+        .winner-position {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .winner-votes {
+            margin-top: 1rem;
+            font-size: 1rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(16,185,129,0.15);
+            border: 1px solid rgba(16,185,129,0.3);
+            color: var(--success);
+            padding: 0.3rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.2rem;
+            text-align: center;
+        }
+
+        .stat-card-number {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .stat-card-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <a href="index.html" class="navbar-brand">🗳️ UniVote</a>
+        <ul class="navbar-links">
+            <li><a href="vote.html">Vote</a></li>
+            <li><a href="results.html">Results</a></li>
+            <li><a href="verify.html">Verify</a></li>
+            <li><a href="admin.html">Admin</a></li>
+        </ul>
+        <button class="wallet-btn" id="connectBtn" onclick="handleConnect()">
+            🔗 Connect Wallet
+        </button>
+    </nav>
+
+    <!-- RESULTS HEADER -->
+    <div class="results-header">
+        <h1>📊 Election Results</h1>
+        <p>Live results sourced directly from the blockchain</p>
+    </div>
+
+    <div class="container">
+
+        <!-- ELECTION SELECTOR -->
+        <div class="card" style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                    <select id="electionSelect" onchange="loadResults()">
+                        <option value="">-- Select an election --</option>
+                    </select>
+                </div>
+                <div>
+                    <span class="live-indicator" id="liveIndicator" style="display:none;">
+                        <span class="live-dot"></span> LIVE
+                    </span>
+                </div>
+                <button class="btn btn-outline" onclick="loadResults()" style="font-size: 0.85rem;">
+                    🔄 Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- RESULTS CONTENT -->
+        <div id="resultsContent" style="display:none;">
+
+            <!-- STATS ROW -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-card-number" id="statTotalVotes">0</div>
+                    <div class="stat-card-label">Total Votes Cast</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-number" id="statRegistered">0</div>
+                    <div class="stat-card-label">Registered Voters</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-number" id="statTurnout">0%</div>
+                    <div class="stat-card-label">Voter Turnout</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-number" id="statCandidates">0</div>
+                    <div class="stat-card-label">Candidates</div>
+                </div>
+            </div>
+
+            <!-- WINNER (shown after election ends) -->
+            <div class="winner-card" id="winnerCard" style="display:none;">
+                <div class="winner-trophy">🏆</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">WINNER</div>
+                <div class="winner-name" id="winnerName"></div>
+                <div class="winner-position" id="winnerPosition"></div>
+                <div class="winner-votes" id="winnerVotes"></div>
+            </div>
+
+            <!-- LIVE STANDINGS -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
+                    <div class="section-title" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">
+                        Live Standings
+                    </div>
+                    <span id="electionStatusBadge" class="badge"></span>
+                </div>
+
+                <div id="standingsList"></div>
+            </div>
+
+            <!-- LAST UPDATED -->
+            <p style="text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 1rem;">
+                Last updated: <span id="lastUpdated">—</span>
+                <span id="autoRefreshNote" style="display:none;"> • Auto-refreshing every 15 seconds</span>
+            </p>
+
+        </div>
+
+        <!-- EMPTY STATE -->
+        <div id="emptyState" class="card" style="text-align:center; padding: 3rem; display:none;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+            <h2 style="margin-bottom: 0.5rem;">No Elections Found</h2>
+            <p style="color: var(--text-muted);">No elections have been created yet.</p>
+        </div>
+
+    </div>
+
+    <script src="js/contract.js"></script>
+    <script src="js/results.js"></script>
+</body>
+</html>
