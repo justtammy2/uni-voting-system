@@ -5,6 +5,14 @@ pragma solidity ^0.8.19;
 /// @author Aremu Oluwatamilore
 /// @notice A decentralized voting system for university elections with on-chain student identity verification
 
+interface IVoterNFT {
+    function mintVoterCertificate(
+        address _voter,
+        uint256 _electionId,
+        string memory _electionTitle
+    ) external;
+}
+
 contract Voting {
     // ─────────────────────────────────────────────
     //  STRUCTS
@@ -41,6 +49,7 @@ contract Voting {
 
     address public admin;
     uint256 public electionCount;
+    IVoterNFT public voterNFT;
 
     // electionId => Election
     mapping(uint256 => Election) public elections;
@@ -120,8 +129,13 @@ contract Voting {
     //  CONSTRUCTOR
     // ─────────────────────────────────────────────
 
-    constructor() {
+    constructor(address _voterNFT) {
         admin = msg.sender;
+        voterNFT = IVoterNFT(_voterNFT);
+    }
+
+    function setNFTContract(address _voterNFT) external onlyAdmin {
+        voterNFT = IVoterNFT(_voterNFT);
     }
 
     // ─────────────────────────────────────────────
@@ -246,6 +260,13 @@ contract Voting {
         candidates[_electionId][_candidateId].voteCount++;
 
         emit VoteCast(_electionId, _candidateId, msg.sender);
+
+        // mint voter certificate NFT
+        voterNFT.mintVoterCertificate(
+            msg.sender,
+            _electionId,
+            elections[_electionId].title
+        );
     }
 
     // ─────────────────────────────────────────────
@@ -267,6 +288,18 @@ contract Voting {
             result[i - 1] = candidates[_electionId][i];
         }
         return result;
+    }
+
+    function getCandidate(
+        uint256 _electionId,
+        uint256 _candidateId
+    ) external view electionExists(_electionId) returns (Candidate memory) {
+        require(
+            _candidateId > 0 &&
+                _candidateId <= elections[_electionId].candidateCount,
+            "Invalid candidate"
+        );
+        return candidates[_electionId][_candidateId];
     }
 
     function getVoterStatus(

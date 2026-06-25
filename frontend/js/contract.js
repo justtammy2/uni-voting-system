@@ -2,9 +2,8 @@
 //  CONTRACT ADDRESSES — update these after deployment
 // ─────────────────────────────────────────────
 
-const VOTING_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-const NFT_ADDRESS = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
-
+const VOTING_CONTRACT_ADDRESS = "0x11eF5641cE88A24756b777EDD616BEe8E9cA7781";
+const NFT_CONTRACT_ADDRESS = "0x05Fee0924091BD72B5c34fE137451dE52c7Fd4b9";
 // ─────────────────────────────────────────────
 //  VOTING CONTRACT ABI
 // ─────────────────────────────────────────────

@@ -3,12 +3,14 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "../../src/Voting.sol";
+import "../../src/VoterNFT.sol";
 
 /// @title Unit Tests for Voting Contract
 /// @notice Tests each function in isolation
 
 contract VotingUnitTest is Test {
     Voting voting;
+    VoterNFT nft;
 
     address admin = address(this);
     address voter1 = address(0x1);
@@ -18,7 +20,10 @@ contract VotingUnitTest is Test {
     uint256 endTime;
 
     function setUp() public {
-        voting = new Voting();
+        nft = new VoterNFT(address(1));
+        voting = new Voting(address(nft));
+        nft = new VoterNFT(address(voting));
+        voting.setNFTContract(address(nft));
         startTime = block.timestamp + 1 hours;
         endTime = block.timestamp + 2 hours;
     }
@@ -73,6 +78,7 @@ contract VotingUnitTest is Test {
     }
 
     function test_Unit_CreateElection_RevertIf_EndTimeInPast() public {
+        vm.warp(1000);
         vm.expectRevert("End time must be in the future");
         voting.createElection(
             "Bad Election",
